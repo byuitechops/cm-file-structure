@@ -1,0 +1,29 @@
+{
+  "name": "cm-file-structure",
+  "version": "1.0.0",
+  "description": "Template for your children!",
+  "main": "main.js",
+  "dependencies": {
+    "async": "^2.6.0"
+  },
+  "devDependencies": {
+    "child-development-kit": "github:byuitechops/child-development-kit",
+    "tap": "^10.7.3",
+    "write-course": "github:byuitechops/write-course"
+  },
+  "scripts": {
+    "start": "node ./node_modules/child-development-kit/runChild.js",
+    "test": "tap ./node_modules/child-development-kit/testChild.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byuitechops/cm-file-structure.git"
+  },
+  "author": "Zachary Williams",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/byuitechops/child-template/issues"
+  },
+  "homepage": "https://github.com/byuitechops/child-template#readme",
+  "childType": "preImport"
+}

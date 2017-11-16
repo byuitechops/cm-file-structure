@@ -1,5 +1,7 @@
 node_modules/
 *.json
+!package-lock.json
+!package.json
 D2LOriginal/
 D2LProcessing/
 coverage/
