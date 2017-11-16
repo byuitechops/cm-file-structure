@@ -10,7 +10,7 @@ const path = require('path');
 // https://github.com/byuitechops/d2l-to-canvas-conversion-tool/blob/master/documentation/classFunctions.md
 
 module.exports = (course, stepCallback) => {
-    course.addModuleReport('cm-file-structure');
+    course.addModuleReport('cmFileStructure');
 
     var documentExtensions = [
         '.doc',
@@ -77,10 +77,10 @@ module.exports = (course, stepCallback) => {
         function setPath(location) {
             file.newPath = path.resolve(
                 course.info.altUnzippedFilepath,
-                course.info.fileName.split('.zip')[0],
                 location,
                 file.name
             );
+            course.success('cmFileStructure', `${file.name} set to be put in the ${location} folder.`);
         }
 
         if (documentExtensions.includes(file.ext)) {
@@ -91,8 +91,8 @@ module.exports = (course, stepCallback) => {
             setPath('template');
         } else {
             setPath('archive');
+            course.warning('cmFileStructure', `${file.name} was added to the Archive folder. Is this correct?`);
         }
-        console.log(file.path);
     });
 
     // For each one, add the new location based on its ext
