@@ -91,7 +91,7 @@ module.exports = (course, stepCallback) => {
             setPath('template');
         } else {
             setPath('archive');
-            course.warning('cmFileStructure', `${file.name} was added to the Archive folder. Is this correct?`);
+            course.throwWarning('cmFileStructure', `${file.name} was added to the Archive folder. Is this correct?`);
         }
     });
 
