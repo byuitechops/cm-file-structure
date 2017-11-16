@@ -1,0 +1,9 @@
+node_modules/
+*.json
+!D2LOriginal/.gitkeep
+!D2LProcessing/.gitkeep
+D2LOriginal/*
+D2LProcessing/*
+coverage/
+.nyc_output/
+documentation/
