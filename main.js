@@ -87,7 +87,7 @@ module.exports = (course, stepCallback) => {
         }
 
         if (file.ext === '.xml') {
-            file.newPath = file.path;
+            setPath('');
         } else if (documentExtensions.includes(file.ext)) {
             setPath('documents');
         } else if (mediaExtensions.includes(file.ext)) {
