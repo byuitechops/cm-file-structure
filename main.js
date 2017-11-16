@@ -1,28 +1,101 @@
 /*eslint-env node, es6*/
 
 /* Module Description */
+/* Restructures the contents of the course for Canvas */
 
 /* Put dependencies here */
-
-/* Include this line only if you are going to use Canvas API */
-// const canvas = require('canvas-wrapper');
+const path = require('path');
 
 /* View available course object functions */
 // https://github.com/byuitechops/d2l-to-canvas-conversion-tool/blob/master/documentation/classFunctions.md
 
 module.exports = (course, stepCallback) => {
-    /* Create the module report so that we can access it later as needed.
-    This MUST be done at the beginning of each child module. */
-    course.addModuleReport('moduleName');
+    course.addModuleReport('cm-file-structure');
 
-    /* Used to log successful actions */
-    course.success('moduleName', 'moduleName successfully ...');
+    var documentExtensions = [
+        '.doc',
+        '.docx',
+        '.pdf',
+        '.xml',
+        '.xls',
+        '.xlsx',
+        '.csv',
+        '.odt',
+        '.ods',
+        '.txt',
+        '.dat',
+        '.log',
+        '.mdb',
+        '.sav',
+        '.sql',
+        '.tar',
+        '.xlr',
+        '.wpd',
+        '.wks',
+        '.wps'
+    ];
 
-    /* How to report an error (Replace "moduleName") */
-    // course.throwErr('moduleName', e);
+    var mediaExtensions = [
+        '.png',
+        '.jpeg',
+        '.ppt',
+        '.pptx',
+        '.aif',
+        '.cda',
+        '.mid',
+        '.midi',
+        '.mp3',
+        '.ogg',
+        '.wav',
+        '.wma',
+        '.wpl',
+        '.gif',
+        '.bmp',
+        '.ai',
+        '.ico',
+        '.jpg',
+        '.ps',
+        '.psd',
+        '.svg',
+        '.tif',
+        '.tiff',
+        '.pps',
+        '.avi',
+        '.wmv',
+        '.mpg',
+        '.mpeg'
+    ];
 
-    /* You should never call the stepCallback with an error. We want the
-    whole program to run when testing so we can catch all existing errors */
+    var templateExtensions = [
+
+    ];
+
+    // Get file list from course.contents
+
+    course.content.forEach(file => {
+
+        function setPath(location) {
+            file.newPath = path.resolve(
+                course.info.altUnzippedFilepath,
+                course.info.fileName.split('.zip')[0],
+                location,
+                file.name
+            );
+        }
+
+        if (documentExtensions.includes(file.ext)) {
+            setPath('documents');
+        } else if (mediaExtensions.includes(file.ext)) {
+            setPath('media');
+        } else if (templateExtensions.includes(file.ext)) {
+            setPath('template');
+        } else {
+            setPath('archive');
+        }
+        console.log(file.path);
+    });
+
+    // For each one, add the new location based on its ext
 
     stepCallback(null, course);
 };
