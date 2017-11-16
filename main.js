@@ -16,7 +16,6 @@ module.exports = (course, stepCallback) => {
         '.doc',
         '.docx',
         '.pdf',
-        '.xml',
         '.xls',
         '.xlsx',
         '.csv',
@@ -80,10 +79,16 @@ module.exports = (course, stepCallback) => {
                 location,
                 file.name
             );
-            course.success('cmFileStructure', `${file.name} set to be put in the ${location} folder.`);
+            if (location === 'archive') {
+                course.throwWarning('cmFileStructure', `${file.name} was added to the Archive folder. Is this correct?`);
+            } else {
+                course.success('cmFileStructure', `${file.name} set to be put in the ${location} folder.`);
+            }
         }
 
-        if (documentExtensions.includes(file.ext)) {
+        if (file.ext === '.xml') {
+            file.newPath = file.path;
+        } else if (documentExtensions.includes(file.ext)) {
             setPath('documents');
         } else if (mediaExtensions.includes(file.ext)) {
             setPath('media');
@@ -91,7 +96,6 @@ module.exports = (course, stepCallback) => {
             setPath('template');
         } else {
             setPath('archive');
-            course.throwWarning('cmFileStructure', `${file.name} was added to the Archive folder. Is this correct?`);
         }
     });
 
