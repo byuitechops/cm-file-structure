@@ -44,6 +44,7 @@ module.exports = (course, stepCallback) => {
         '.mid',
         '.midi',
         '.mp3',
+        '.mp4',
         '.ogg',
         '.wav',
         '.wma',
@@ -70,7 +71,6 @@ module.exports = (course, stepCallback) => {
     ];
 
     // Get file list from course.contents
-
     course.content.forEach(file => {
 
         function setPath(location) {
@@ -81,8 +81,10 @@ module.exports = (course, stepCallback) => {
             );
             if (location === 'archive') {
                 course.throwWarning('cmFileStructure', `${file.name} was added to the Archive folder. Is this correct?`);
+            } else if (!location) {
+                course.success('cmFileStructure', `${file.name} is an XML file, and will be left where it is.`);
             } else {
-                course.success('cmFileStructure', `${file.name} set to be put in the ${location} folder.`);
+                course.success('cmFileStructure', `${file.name} set to be written in the ${location} folder.`);
             }
         }
 
@@ -99,7 +101,6 @@ module.exports = (course, stepCallback) => {
         }
     });
 
-    // For each one, add the new location based on its ext
-
+    // For each one, add the new location based on its extension
     stepCallback(null, course);
 };
