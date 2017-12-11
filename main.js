@@ -90,12 +90,12 @@ module.exports = (course, stepCallback) => {
 
         if (file.ext === '.xml') {
             setPath('');
+        } else if (file.name === 'largeBanner.jpg' || file.name === 'smallBanner.jpg') {
+            setPath('template');
         } else if (documentExtensions.includes(file.ext)) {
             setPath('documents');
         } else if (mediaExtensions.includes(file.ext)) {
             setPath('media');
-        } else if (templateExtensions.includes(file.ext)) {
-            setPath('template');
         } else {
             setPath('archive');
         }
