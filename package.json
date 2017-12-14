@@ -1,5 +1,5 @@
 {
-  "name": "cm-file-structure",
+  "name": "reorganize-file-structure",
   "version": "1.0.0",
   "description": "Template for your children!",
   "main": "main.js",
@@ -17,13 +17,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/byuitechops/cm-file-structure.git"
+    "url": "git+https://github.com/byuitechops/reorganize-file-structure.git"
   },
   "author": "Zachary Williams",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/byuitechops/child-template/issues"
+    "url": "https://github.com/byuitechops/reorganize-file-structure/issues"
   },
-  "homepage": "https://github.com/byuitechops/child-template#readme",
-  "childType": "preImport"
+  "homepage": "https://github.com/byuitechops/reorganize-file-structure#readme",
+  "childType": "postImport"
 }
