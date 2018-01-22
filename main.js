@@ -8,7 +8,6 @@ const canvas = require('canvas-wrapper');
 const asyncLib = require('async');
 
 module.exports = (course, stepCallback) => {
-    course.addModuleReport('reorganize-file-structure');
 
     var documentExtensions = [
         '.doc',
@@ -130,7 +129,10 @@ module.exports = (course, stepCallback) => {
                     else {
                         /* Set the folder ID we'll use when moving stuff to the new folder's id */
                         folder.id = results.id;
-                        course.success('reorganize-file-structure', `ID: ${folder.id} | ${folder.name} created inside canvas course ${course.info.canvasOU}.`);
+                        course.log('Folders Created', {
+                            name: folder.name,
+                            id: folder.id
+                        });
                         eachCallback(null);
                     }
                 });
@@ -148,8 +150,7 @@ module.exports = (course, stepCallback) => {
         canvas.get(`/api/v1/courses/${course.info.canvasOU}/files`, (err, files) => {
             if (err) callback(err, files);
             else {
-                course.success('reorganize-file-structure',
-                    `All ${files.length} files retrieved from the course in Canvas.`);
+                course.message(`All ${files.length} files retrieved from the course in Canvas.`)
                 callback(null, files);
             }
         });
@@ -179,8 +180,11 @@ module.exports = (course, stepCallback) => {
                 if (err) {
                     eachCallback(err);
                 } else {
-                    course.success('reorganize-file-structure', `${file.display_name} named changed to: Copy - ${file.display_name}`);
                     file.display_name = `Copy - ${file.display_name}`;
+                    course.log('File Names Changed', {
+                        'Old Name': file.display_name,
+                        'New Name':`Copy - ${file.display_name}`
+                    });
                     eachCallback(null);
                 }
             });
@@ -201,11 +205,14 @@ module.exports = (course, stepCallback) => {
             {parent_folder_id: folder.id},
             (err, result) => {
                 if (err) {
-                    course.throwErr('reorganize-file-structure', err);
+                    course.error(err);
                     eachCallback(null);
                 }
                 else {
-                    course.success('reorganize-file-structure', `${file.display_name} moved to the ${folder.name} folder.`);
+                    course.log('Files Moved', {
+                        'Name': file.display_name,
+                        'Moved To': folder.name
+                    })
                     course.info.movedFiles.push(file.display_name);
                     eachCallback(null);
                 }
@@ -243,7 +250,7 @@ module.exports = (course, stepCallback) => {
                 callback(err);
             } else {
                 if (course.info.restructureDupeFilesToDo.length > 0) {
-                    course.throwWarning('reorganize-file-structure', 'Some files had twins, attempting to move them again.');
+                    course.warning('Some files had twins, attempting to move them again.');
                     setTimeout(() => {
                         moveFiles(course.info.restructureDupeFiles, callback);
                         course.info.restructureDupeFilesToDo = [];
@@ -258,7 +265,7 @@ module.exports = (course, stepCallback) => {
     function deleteExtraFolders(callback) {
         canvas.get(`/api/v1/courses/${course.info.canvasOU}/folders`, (err, canvasFolders) => {
             if (err) {
-                course.throwErr('reorganize-file-structure', err);
+                course.error(err);
                 callback(err);
                 return;
             }
@@ -271,11 +278,13 @@ module.exports = (course, stepCallback) => {
                     canvasFolder.name != 'course_image') {
                     canvas.delete(`/api/v1/folders/${canvasFolder.id}`, (delErr, result) => {
                         if (delErr) {
-                            course.throwErr('reorganize-file-structure', delErr);
+                            course.error(delErr);
                             eachCallback(null);
                         }
                         else {
-                            course.success('reorganize-file-structure', `Deleted ${canvasFolder.name} from the course in Canvas.`);
+                            course.log('Folders Deleted', {
+                                'Name': canvasFolder.name
+                            });
                             eachCallback(null);
                         }
                     });
@@ -311,11 +320,17 @@ module.exports = (course, stepCallback) => {
                         if (err) next(err, null);
                         else {
                             course.success('reorganize-file-structure', `ID: ${folder.name} folder created inside ${parentFolder.name}.`);
+                            course.log('Folders Created', {
+                                name: folder.name,
+                                id: folder.id,
+                                parentFolder: parentFolder.name,
+                                parentId: parentFolder.id
+                            })
                             next(null, folder);
                         }
                     });
             }, (timesErr, folders) => {
-                if (timesErr) course.throwErr(timesErr);
+                if (timesErr) course.error(timesErr);
                 else {
                     eachCallback(null);
                 }
@@ -338,7 +353,7 @@ module.exports = (course, stepCallback) => {
 
     asyncLib.waterfall(functions, (err, result) => {
         if (err) {
-            course.throwErr('reorganize-file-structure', err);
+            course.error(err);
             stepCallback(null, course);
         } else {
             stepCallback(null, course);
