@@ -164,7 +164,7 @@ module.exports = (course, stepCallback) => {
                 eachCallback(null);
                 return;
             }
-            canvas.delete(`/api/v1/folders/${folder.id}`, (deleteErr, body) => {
+            canvas.delete(`/api/v1/folders/${folder.id}?force=true`, (deleteErr, body) => {
                 if (deleteErr) {
                     console.log('chrometato');
                     course.error(deleteErr);
