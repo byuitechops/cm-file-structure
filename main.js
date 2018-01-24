@@ -68,9 +68,14 @@ module.exports = (course, stepCallback) => {
         '.mov'
     ];
 
+    var templateFiles = [
+        'dashboard.jpg',
+        'homeImage.jpg',
+        'smallBanner.jpg'
+    ];
+
     /* The folders to be created */
-    var folders = [
-        {
+    var mainFolders = [{
             name: 'documents',
             id: -1,
             lessonFolders: true,
@@ -92,235 +97,212 @@ module.exports = (course, stepCallback) => {
         },
     ];
 
-    /* Checks if we have any existing folders with the same names */
-    function checkFolders(callback) {
-        // Get the names of the folders we'll be needing
-        var folderNames = folders.map(folder => folder.name);
-        // Get the canvas folders from the course
-        canvas.get(`/api/v1/courses/${course.info.canvasOU}/folders`, (err, canvasFolders) => {
-            // For each canvas folder...
-            canvasFolders.forEach(canvasFolder => {
-                // If we already have a folder in canvas with the name we need...
-                if (folderNames.includes(canvasFolder.name)) {
-                    // Assign its ID to the folder object, so we can use it
-                    var theFolder = folders.find(folder => folder.name === canvasFolder.name);
-                    theFolder.id = canvasFolder.id;
+    var topFolderID = -1;
+    var canvasFiles = [];
+
+
+    /* Get top folder so we can move everything to it */
+    function getTopFolder(callback) {
+        canvas.get(`/api/v1/courses/${course.info.canvasOU}/folders`, (err, folders) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+            var topFolder = folders.find(folder => folder.name == 'course files');
+            topFolderID = topFolder.id;
+            callback(null, topFolder);
+        });
+    }
+
+    /* Moves all files to the top folder to make it easier to move them later */
+    function moveFilesToTop(topFolder, callback) {
+
+        /* Move a file to the top folder */
+        function moveFile(file, eachCallback) {
+            if (file.folder_id == topFolder.id /*|| file.display_name == 'dashboard.jpg'*/ ) {
+                eachCallback(null);
+                return;
+            }
+
+            var putObj = {
+                'parent_folder_id': topFolder.id
+            }
+
+            canvas.put(`/api/v1/files/${file.id}`, putObj,
+                (putErr, changedFile) => {
+                    if (putErr) {
+                        course.error(putErr);
+                    }
+                    eachCallback(null);
+                });
+        }
+
+        /* Get all the files */
+        canvas.getFiles(course.info.canvasOU, (err, files) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+            canvasFiles = files;
+            /* Async move all to top folder */
+            asyncLib.each(files, moveFile, (eachErr) => {
+                if (eachErr) {
+                    callback(eachErr);
+                    return;
                 }
+                callback(null);
             });
+        })
+
+    }
+
+    /* Remove all of the folders from the course, except course_image */
+    function deleteFolders(callback) {
+
+        function deleteFolder(folder, eachCallback) {
+            if (folder.name == 'course files') {
+                eachCallback(null);
+                return;
+            }
+            canvas.delete(`/api/v1/folders/${folder.id}`, (deleteErr, body) => {
+                if (deleteErr) {
+                    console.log('chrometato');
+                    course.error(deleteErr);
+                } else {
+                    course.log('Folders Deleted in Canvas', {
+                        'Folder Name': folder.name,
+                        'Folder ID': folder.id
+                    });
+                }
+                eachCallback(null);
+            });
+        }
+
+        canvas.get(`/api/v1/courses/${course.info.canvasOU}/folders`, (err, folders) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            /* For each folder, delete it */
+            asyncLib.each(folders, deleteFolder, (eachErr) => {
+                if (eachErr) {
+                    callback(eachErr);
+                    return;
+                }
+                callback(null);
+            });
+        });
+    }
+
+    function createMainFolders(callback) {
+
+        function createFolder(folder, eachCallback) {
+
+            var postObj = {
+                'name': folder.name,
+                'parent_folder_id': topFolderID
+            }
+
+            canvas.post(`/api/v1/courses/${course.info.canvasOU}/folders`, postObj, (postErr, newFolder) => {
+                if (postErr) {
+                    course.error(postErr);
+                } else {
+                    /* Set the ID of our folders object to the new folder */
+                    folder.id = newFolder.id;
+                    course.log(`Folders Created in Canvas`, {
+                        'Folder Name': newFolder.name,
+                        'Folder ID': newFolder.id
+                    });
+                }
+                eachCallback(null);
+            })
+        }
+
+        asyncLib.each(mainFolders, createFolder, (err) => {
+            if (err) {
+                callback(err);
+                return;
+            }
             callback(null);
         });
     }
 
-    /* Creates the four folders we'll be moving files into */
-    function createFolders(callback) {
-        /* Create each folder (eachSeries to gaurantee folder order) */
-        asyncLib.eachSeries(folders, (folder, eachCallback) => {
-            /* If we found an existing folder with the same name, skip creating this one */
-            if (folder.id != -1) {
+    /* Move the files into their new homes */
+    function moveFiles(callback) {
+
+        /* Move a file to their new folder */
+        function moveFile(file, eachCallback) {
+
+            /* If it is the course image, we don't want to move it */
+            if (file.display_name == 'dashboard.jpg' && file.folder_id == topFolderID) {
                 eachCallback(null);
-            } else {
-                /* Create the folder in canvas */
-                canvas.post(`/api/v1/courses/${course.info.canvasOU}/folders`, {
-                    name: folder.name,
-                    parent_folder_path: '/'
-                },
-                (err, results) => {
-                    if (err) eachCallback(err);
-                    else {
-                        /* Set the folder ID we'll use when moving stuff to the new folder's id */
-                        folder.id = results.id;
-                        course.log('Folders Created', {
-                            name: folder.name,
-                            id: folder.id
-                        });
-                        eachCallback(null);
-                    }
-                });
-            }
-        }, (err) => {
-            if (err) callback(err);
-            else {
-                callback(null);
-            }
-        });
-    }
-
-    // Get all course files
-    function getFiles(callback) {
-        canvas.get(`/api/v1/courses/${course.info.canvasOU}/files`, (err, files) => {
-            if (err) callback(err, files);
-            else {
-                course.message(`All ${files.length} files retrieved from the course in Canvas.`)
-                callback(null, files);
-            }
-        });
-    }
-
-    function collectDupes(files, callback) {
-        course.newInfo('restructureDupeFiles', []);
-        course.newInfo('restructureDupeFilesToDo', []);
-        var fileNames = files.map(file => file.display_name);
-        files.filter(file => {
-            /* If the first index and last index are different, there's more than one */
-            if (course.info.restructureDupeFilesToDo.includes(file.display_name)) {
                 return;
             }
-            if (fileNames.indexOf(file.display_name) != fileNames.lastIndexOf(file.display_name)) {
-                course.info.restructureDupeFiles.push(file);
-                course.info.restructureDupeFilesToDo.push(file.display_name);
-            }
-        });
-        callback(null, files);
-    }
 
-    function changeFileNames(files, callback) {
-        asyncLib.eachLimit(course.info.restructureDupeFiles, 15, (file, eachCallback) => {
-
-            canvas.put(`/api/v1/files/${file.id}?name=Copy%20-%20${file.display_name}`, {}, (err, result) => {
-                if (err) {
-                    eachCallback(err);
-                } else {
-                    file.display_name = `Copy - ${file.display_name}`;
-                    course.log('File Names Changed', {
-                        'Old Name': file.display_name,
-                        'New Name':`Copy - ${file.display_name}`
-                    });
-                    eachCallback(null);
-                }
-            });
-
-        }, (err) => {
-            if (err) callback(err, files);
-            else {
-                callback(null, files);
-            }
-        });
-    }
-
-    function moveFiles(files, callback) {
-        course.newInfo('movedFiles', []);
-
-        function moveToFolder(file, folder, eachCallback) {
-            canvas.put(`/api/v1/files/${file.id}`,
-            {parent_folder_id: folder.id},
-            (err, result) => {
-                if (err) {
-                    course.error(err);
-                    eachCallback(null);
-                }
-                else {
-                    course.log('Files Moved', {
-                        'Name': file.display_name,
-                        'Moved To': folder.name
-                    })
-                    course.info.movedFiles.push(file.display_name);
-                    eachCallback(null);
-                }
-            });
-        }
-
-        /* For Each -> File | See what it's extension is, then move it */
-        asyncLib.eachLimit(files, 15, (file, eachCallback) => {
-
+            var newHome;
             var splitName = file.display_name.split('.');
             var extension = '.' + splitName[splitName.length - 1];
-            var templateFiles = [
-                'dashboard.jpg',
-                'homeImage.jpg',
-                'smallBanner.jpg'
-            ];
 
             /* Figure out which folder to move it to */
             if (documentExtensions.includes(extension)) {
                 /* Move to Documents */
-                moveToFolder(file, folders[0], eachCallback);
+                newHome = mainFolders[0].id;
             } else if (templateFiles.includes(file.display_name)) {
                 /* Move to Template */
-                moveToFolder(file, folders[2], eachCallback);
+                newHome = mainFolders[2].id;
             } else if (mediaExtensions.includes(extension)) {
                 /* Move to Media */
-                moveToFolder(file, folders[1], eachCallback);
+                newHome = mainFolders[1].id;
             } else {
                 /* Move to Archive */
-                moveToFolder(file, folders[3], eachCallback);
+                newHome = mainFolders[3].id;
             }
 
-        }, (err, result) => {
-            if (err) {
-                callback(err);
-            } else {
-                if (course.info.restructureDupeFilesToDo.length > 0) {
-                    course.warning('Some files had twins, attempting to move them again.');
-                    setTimeout(() => {
-                        moveFiles(course.info.restructureDupeFiles, callback);
-                        course.info.restructureDupeFilesToDo = [];
-                    }, 5000);
-                } else {
-                    callback(null);
-                }
+            var putObj = {
+                'parent_folder_id': newHome
             }
-        });
-    }
 
-    function deleteExtraFolders(callback) {
-        canvas.get(`/api/v1/courses/${course.info.canvasOU}/folders`, (err, canvasFolders) => {
+            canvas.put(`/api/v1/files/${file.id}`, putObj,
+                (putErr, changedFile) => {
+                    if (putErr) {
+                        course.error(putErr);
+                    }
+                    eachCallback(null);
+                });
+        }
+
+        asyncLib.each(canvasFiles, moveFile, err => {
             if (err) {
-                course.error(err);
                 callback(err);
                 return;
             }
-            /* Get the folder names */
-            var folderNames = folders.map(folder => folder.name);
-            /* For Each -> Canvas Folder | If it isn't one of the four folders.... delete it */
-            asyncLib.each(canvasFolders, (canvasFolder, eachCallback) => {
-                if (!folderNames.includes(canvasFolder.name) &&
-                    canvasFolder.name != 'course files' &&
-                    canvasFolder.name != 'course_image') {
-                    canvas.delete(`/api/v1/folders/${canvasFolder.id}`, (delErr, result) => {
-                        if (delErr) {
-                            course.error(delErr);
-                            eachCallback(null);
-                        }
-                        else {
-                            course.log('Folders Deleted', {
-                                'Name': canvasFolder.name
-                            });
-                            eachCallback(null);
-                        }
-                    });
-                } else {
-                    eachCallback(null);
-                }
-            }, (err) => {
-                if (err) callback(err);
-                else callback(null);
-            });
+            callback(null);
         });
     }
 
-    /* Create the Lesson folders in Documents/Media */
-    function createLessonFolders(callback) {
-        if (course.info.lessonFolders == false) {
-            callback(null, null);
-            return;
-        }
-        /* Get just the folders we want to create lesson folders in */
-        var parentFolders = folders.filter(folder => folder.lessonFolders);
+    function lessonFolders(callback) {
+        // if (!course.info.lessonFolders) {
+        //     course.message('Lesson folders were not created in documents and media. The option was not requested.');
+        //     callback(null);
+        //     return;
+        // }
 
-        function makeFolders(parentFolder, eachCallback) {
+        var parentFolders = mainFolders.filter(folder => folder.lessonFolders);
+
+        function createFolders(parentFolder, eachCallback) {
             asyncLib.times(14, (n, next) => {
                 /* Set the folder name */
                 var folderName = 'Lesson ' + (n + 1); //n < 10 ? `Lesson 0${n + 1}` : `Lesson ${n + 1}`;
                 /* Create the folder in canvas */
                 canvas.post(`/api/v1/courses/${course.info.canvasOU}/folders`, {
-                    name: folderName,
-                    parent_folder_path: `/${parentFolder.name}/`
-                },
+                        name: folderName,
+                        parent_folder_id: parentFolder.id
+                    },
                     (err, folder) => {
                         if (err) next(err, null);
                         else {
-                            course.success('reorganize-file-structure', `ID: ${folder.name} folder created inside ${parentFolder.name}.`);
-                            course.log('Folders Created', {
+                            course.log('Folders Created in Canvas', {
                                 name: folder.name,
                                 id: folder.id,
                                 parentFolder: parentFolder.name,
@@ -330,25 +312,31 @@ module.exports = (course, stepCallback) => {
                         }
                     });
             }, (timesErr, folders) => {
-                if (timesErr) course.error(timesErr);
-                else {
-                    eachCallback(null);
+                if (timesErr) {
+                    callback(timesErr);
+                    return;
                 }
+                eachCallback(null);
             });
         }
 
-        asyncLib.each(parentFolders, makeFolders, callback);
+        asyncLib.each(parentFolders, createFolders, (err) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+            callback(null);
+        });
     }
 
+
     var functions = [
-        checkFolders, // Checks existing canvas folders for ones with the same names as ones we'll create
-        createFolders, // Create our four folders
-        getFiles, // Retrieves files from canvas
-        collectDupes, // Checks for duplicate file names
-        changeFileNames, // Change names with twin file names to a different name to prevent issues
-        moveFiles, // Moves files into the right folders
-        deleteExtraFolders, // Deletes any folders left over, now that they are empty
-        createLessonFolders, // Creates lesson folders for L1-12, if asked to do so
+        getTopFolder,
+        moveFilesToTop,
+        deleteFolders,
+        createMainFolders,
+        moveFiles,
+        lessonFolders
     ];
 
     asyncLib.waterfall(functions, (err, result) => {

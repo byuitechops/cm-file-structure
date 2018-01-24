@@ -7,6 +7,7 @@
     "async": "^2.6.0"
   },
   "devDependencies": {
+    "canvas-wrapper": "git+https://github.com/byuitechops/Canvas-wrapper.git",
     "child-development-kit": "github:byuitechops/child-development-kit",
     "tap": "^10.7.3",
     "write-course": "github:byuitechops/write-course"
