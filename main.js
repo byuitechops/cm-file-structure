@@ -150,7 +150,7 @@ module.exports = (course, stepCallback) => {
                 return;
             }
 
-            asyncLib.eachLimit(folders, 1, moveFolder, (eachErr) => {
+            asyncLib.eachLimit(folders, 15, moveFolder, (eachErr) => {
                 if (eachErr) {
                     callback(eachErr);
                     return;
@@ -246,7 +246,7 @@ module.exports = (course, stepCallback) => {
             }
 
             /* For each folder, delete it */
-            asyncLib.eachLimit(folders, 1, deleteFolder, (eachErr) => {
+            asyncLib.eachLimit(folders, 15, deleteFolder, (eachErr) => {
                 if (eachErr) {
                     callback(eachErr);
                     return;
@@ -280,7 +280,7 @@ module.exports = (course, stepCallback) => {
             })
         }
 
-        asyncLib.eachLimit(mainFolders, 1, createFolder, (err) => {
+        asyncLib.eachLimit(mainFolders, 15, createFolder, (err) => {
             if (err) {
                 callback(err);
                 return;
@@ -334,7 +334,7 @@ module.exports = (course, stepCallback) => {
                 });
         }
 
-        asyncLib.eachLimit(canvasFiles, 1, moveFile, err => {
+        asyncLib.eachLimit(canvasFiles, 15, moveFile, err => {
             if (err) {
                 callback(err);
                 return;
@@ -382,7 +382,7 @@ module.exports = (course, stepCallback) => {
             });
         }
 
-        asyncLib.eachLimit(parentFolders, 1, createFolders, (err) => {
+        asyncLib.eachLimit(parentFolders, 15, createFolders, (err) => {
             if (err) {
                 callback(err);
                 return;
