@@ -110,28 +110,80 @@ module.exports = (course, stepCallback) => {
             }
             var topFolder = folders.find(folder => folder.name == 'course files');
             topFolderID = topFolder.id;
-            callback(null, topFolder);
+            callback(null);
         });
     }
 
-    /* Moves all files to the top folder to make it easier to move them later */
-    function moveFilesToTop(topFolder, callback) {
+    /* Moves folders to the top level */
+    function moveFoldersToTop(callback) {
 
-        /* Move a file to the top folder */
-        function moveFile(file, eachCallback) {
-            if (file.folder_id == topFolder.id /*|| file.display_name == 'dashboard.jpg'*/ ) {
+        /* Move a folder to the top folder */
+        function moveFolder(folder, eachCallback) {
+            if (folder.parent_folder_id === topFolderID ||
+                folder.id === topFolderID) {
                 eachCallback(null);
                 return;
             }
 
             var putObj = {
-                'parent_folder_id': topFolder.id
+                'parent_folder_id': topFolderID,
+                'on_duplicate': 'rename'
             }
 
-            canvas.put(`/api/v1/files/${file.id}`, putObj,
+            canvas.put(`/api/v1/folders/${folder.id}`, putObj,
+                (putErr, changedFolder) => {
+                    if (putErr) {
+                        course.error(putErr);
+                    } else {
+                        course.log('Folders Moved to Top Folder in Canvas', {
+                            'Name': changedFolder.name,
+                            'ID': changedFolder.id
+                        });
+                    }
+                    eachCallback(null);
+                });
+        }
+
+        canvas.get(`/api/v1/courses/${course.info.canvasOU}/folders`, (err, folders) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            asyncLib.eachLimit(folders, 1, moveFolder, (eachErr) => {
+                if (eachErr) {
+                    callback(eachErr);
+                    return;
+                }
+                callback(null);
+            });
+        });
+    }
+
+    /* Moves all files to the top folder to make it easier to move them later */
+    function moveFilesToTop(callback) {
+
+        /* Move a file to the top folder */
+        function moveFile(file, eachCallback) {
+            if (file.folder_id === topFolderID /*|| file.display_name == 'dashboard.jpg'*/ ) {
+                eachCallback(null);
+                return;
+            }
+
+            var putObj = {
+                'parent_folder_id': topFolderID,
+                'on_duplicate': 'rename'
+            }
+
+            canvas.put(`/api/v1/files/${file.id}?on_duplicate=rename`, putObj,
                 (putErr, changedFile) => {
                     if (putErr) {
                         course.error(putErr);
+                    } else {
+                        course.log('Files Moved to Top Folder in Canvas', {
+                            'Name': file.display_name,
+                            'ID': file.id
+                        });
                     }
                     eachCallback(null);
                 });
@@ -164,9 +216,18 @@ module.exports = (course, stepCallback) => {
                 eachCallback(null);
                 return;
             }
+            if (folder.files_count > 0) {
+                course.warning(`${folder.name} contains files, so it wasn't deleted.`)
+                eachCallback(null);
+                return;
+            }
+            if (folder.folders_count > 0) {
+                course.warning(`${folder.name} contains folders, so it wasn't deleted.`)
+                eachCallback(null);
+                return;
+            }
             canvas.delete(`/api/v1/folders/${folder.id}?force=true`, (deleteErr, body) => {
                 if (deleteErr) {
-                    console.log('chrometato');
                     course.error(deleteErr);
                 } else {
                     course.log('Folders Deleted in Canvas', {
@@ -185,7 +246,7 @@ module.exports = (course, stepCallback) => {
             }
 
             /* For each folder, delete it */
-            asyncLib.each(folders, deleteFolder, (eachErr) => {
+            asyncLib.eachLimit(folders, 1, deleteFolder, (eachErr) => {
                 if (eachErr) {
                     callback(eachErr);
                     return;
@@ -219,7 +280,7 @@ module.exports = (course, stepCallback) => {
             })
         }
 
-        asyncLib.each(mainFolders, createFolder, (err) => {
+        asyncLib.eachLimit(mainFolders, 1, createFolder, (err) => {
             if (err) {
                 callback(err);
                 return;
@@ -235,7 +296,7 @@ module.exports = (course, stepCallback) => {
         function moveFile(file, eachCallback) {
 
             /* If it is the course image, we don't want to move it */
-            if (file.display_name == 'dashboard.jpg' && file.folder_id == topFolderID) {
+            if (file.display_name == 'dashboard.jpg' && file.folder_id != topFolderID) {
                 eachCallback(null);
                 return;
             }
@@ -260,7 +321,8 @@ module.exports = (course, stepCallback) => {
             }
 
             var putObj = {
-                'parent_folder_id': newHome
+                'parent_folder_id': newHome,
+                'on_duplicate': 'rename'
             }
 
             canvas.put(`/api/v1/files/${file.id}`, putObj,
@@ -272,7 +334,7 @@ module.exports = (course, stepCallback) => {
                 });
         }
 
-        asyncLib.each(canvasFiles, moveFile, err => {
+        asyncLib.eachLimit(canvasFiles, 1, moveFile, err => {
             if (err) {
                 callback(err);
                 return;
@@ -307,7 +369,7 @@ module.exports = (course, stepCallback) => {
                                 id: folder.id,
                                 parentFolder: parentFolder.name,
                                 parentId: parentFolder.id
-                            })
+                            });
                             next(null, folder);
                         }
                     });
@@ -320,7 +382,7 @@ module.exports = (course, stepCallback) => {
             });
         }
 
-        asyncLib.each(parentFolders, createFolders, (err) => {
+        asyncLib.eachLimit(parentFolders, 1, createFolders, (err) => {
             if (err) {
                 callback(err);
                 return;
@@ -329,14 +391,15 @@ module.exports = (course, stepCallback) => {
         });
     }
 
-
     var functions = [
-        getTopFolder,
-        moveFilesToTop,
-        deleteFolders,
-        createMainFolders,
-        moveFiles,
-        lessonFolders
+        getTopFolder, // Get the ID of the top folder
+        moveFoldersToTop, // Moves all the folders to the top level so its easy to delete them
+        moveFilesToTop, // This doesn't always catch every single file
+        moveFilesToTop, // Run a second time to check for leftovers
+        deleteFolders,  // Deletes the folders at the top level (now that we have all the files out)
+        createMainFolders, // Creates the four main folders we'll move everything in to
+        moveFiles, // Moves all the files into their new homes
+        lessonFolders // Creates the "Lesson 01" through 14 folders in documents and media, if it was requested
     ];
 
     asyncLib.waterfall(functions, (err, result) => {
