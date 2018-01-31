@@ -344,11 +344,11 @@ module.exports = (course, stepCallback) => {
     }
 
     function lessonFolders(callback) {
-        // if (!course.info.lessonFolders) {
-        //     course.message('Lesson folders were not created in documents and media. The option was not requested.');
-        //     callback(null);
-        //     return;
-        // }
+        if (!course.info.lessonFolders) {
+            course.message('Lesson folders were not created in documents and media. The option was not requested.');
+            callback(null);
+            return;
+        }
 
         var parentFolders = mainFolders.filter(folder => folder.lessonFolders);
 
