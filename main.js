@@ -377,6 +377,11 @@ module.exports = (course, stepCallback) => {
                     if (putErr) {
                         course.error(putErr);
                     }
+                    course.log('Files Moved in Canvas', {
+                        'Name': newName,
+                        'ID': file.id,
+                        'New Parent Folder ID': newHome
+                    });
                     eachCallback(null);
                 });
         }
@@ -402,7 +407,7 @@ module.exports = (course, stepCallback) => {
         function createFolders(parentFolder, eachCallback) {
             asyncLib.times(14, (n, next) => {
                 /* Set the folder name */
-                var folderName = 'Lesson ' + (n + 1); //n < 10 ? `Lesson 0${n + 1}` : `Lesson ${n + 1}`;
+                var folderName = n < 10 ? `Week 0${n + 1}` : `Week ${n + 1}`;
                 /* Create the folder in canvas */
                 canvas.post(`/api/v1/courses/${course.info.canvasOU}/folders`, {
                     name: folderName,
