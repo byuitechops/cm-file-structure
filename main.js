@@ -9,6 +9,11 @@ const asyncLib = require('async');
 
 module.exports = (course, stepCallback) => {
 
+    var courseCode = course.info.fileName.split(' ');
+    courseCode = courseCode[0] + courseCode[1];
+    courseCode = courseCode.toLowerCase().replace(/\s+/g, '');
+    courseCode = courseCode.replace(/:/g, '');
+
     var documentExtensions = [
         '.doc',
         '.docx',
@@ -31,24 +36,15 @@ module.exports = (course, stepCallback) => {
         '.wps',
         '.xlsm',
         '.rtf',
-        '.xps'
-    ];
-
-    var mediaExtensions = [
-        '.png',
-        '.jpeg',
+        '.xps',
         '.ppt',
         '.pptx',
-        '.aif',
-        '.cda',
-        '.mid',
-        '.midi',
-        '.mp3',
-        '.mp4',
-        '.ogg',
-        '.wav',
-        '.wma',
-        '.wpl',
+        '.pps',
+    ];
+
+    var imageFiles = [
+        '.png',
+        '.jpeg',
         '.gif',
         '.bmp',
         '.ai',
@@ -59,19 +55,34 @@ module.exports = (course, stepCallback) => {
         '.svg',
         '.tif',
         '.tiff',
-        '.pps',
+    ];
+
+    var videoFiles = [
         '.avi',
         '.wmv',
         '.mpg',
         '.mpeg',
         '.swf',
-        '.mov'
+        '.mov',
+        '.mp4',
+    ];
+
+    var audioFiles = [
+        '.aif',
+        '.cda',
+        '.mid',
+        '.midi',
+        '.mp3',
+        '.wav',
+        '.ogg',
+        '.wma',
+        '.wpl',
     ];
 
     var templateFiles = [
         'dashboard.jpg',
         'homeImage.jpg',
-        'smallBanner.jpg'
+        'courseBanner.jpg'
     ];
 
     /* The folders to be created */
@@ -302,26 +313,61 @@ module.exports = (course, stepCallback) => {
                 return;
             }
 
+            function getNewName(type) {
+                var words = file.display_name.toLowerCase().split(' ');
+                if (words.length == 1) {
+                    return file.display_name;
+                }
+                words.forEach((word, index) => {
+                    if (index != 0) {
+                        words[index] = word.charAt(0).toUpperCase() + word.slice(1);
+                    }
+                });
+                var adjustedName = words.join('');
+                var freshName = `${courseCode}_${type}_${adjustedName}`;
+                course.log('File Names Changed', {
+                    'Name': file.display_name,
+                    'New Name': freshName,
+                    'ID': file.id
+                });
+                return freshName;
+            }
+
             var newHome;
+            var newName;
             var splitName = file.display_name.split('.');
             var extension = '.' + splitName[splitName.length - 1];
+
 
             /* Figure out which folder to move it to */
             if (documentExtensions.includes(extension)) {
                 /* Move to Documents */
                 newHome = mainFolders[0].id;
+                newName = getNewName('document');
             } else if (templateFiles.includes(file.display_name)) {
                 /* Move to Template */
                 newHome = mainFolders[2].id;
-            } else if (mediaExtensions.includes(extension)) {
+                newName = file.display_name;
+            } else if (imageFiles.includes(extension)) {
                 /* Move to Media */
                 newHome = mainFolders[1].id;
+                newName = getNewName('image');
+            } else if (audioFiles.includes(extension)) {
+                /* Move to Media */
+                newHome = mainFolders[1].id;
+                newName = getNewName('audio');
+            } else if (videoFiles.includes(extension)) {
+                /* Move to Media */
+                newHome = mainFolders[1].id;
+                newName = getNewName('video');
             } else {
                 /* Move to Archive */
                 newHome = mainFolders[3].id;
+                newName = file.display_name;
             }
 
             var putObj = {
+                'name': newName,
                 'parent_folder_id': newHome,
                 'on_duplicate': 'rename'
             };
