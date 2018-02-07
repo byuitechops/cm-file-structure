@@ -315,15 +315,16 @@ module.exports = (course, stepCallback) => {
 
             function getNewName(type) {
                 var words = file.display_name.toLowerCase().split(' ');
-                if (words.length == 1) {
-                    return file.display_name;
-                }
+
                 words.forEach((word, index) => {
                     if (index != 0) {
                         words[index] = word.charAt(0).toUpperCase() + word.slice(1);
                     }
                 });
                 var adjustedName = words.join('');
+                if (words.length == 1) {
+                    adjustedName = file.display_name;
+                }
                 var freshName = `${courseCode}_${type}_${adjustedName}`;
                 course.log('File Names Changed', {
                     'Name': file.display_name,
