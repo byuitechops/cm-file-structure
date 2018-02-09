@@ -9,6 +9,8 @@ const asyncLib = require('async');
 
 module.exports = (course, stepCallback) => {
 
+    course.message('File structure reorganization has begun. This may take a couple minutes.');
+
     var courseCode = course.info.fileName.split(' ');
     courseCode = courseCode[0] + courseCode[1];
     courseCode = courseCode.toLowerCase().replace(/\s+/g, '');
@@ -86,8 +88,7 @@ module.exports = (course, stepCallback) => {
     ];
 
     /* The folders to be created */
-    var mainFolders = [
-        {
+    var mainFolders = [{
             name: 'documents',
             id: -1,
             lessonFolders: true,
@@ -177,7 +178,7 @@ module.exports = (course, stepCallback) => {
 
         /* Move a file to the top folder */
         function moveFile(file, eachCallback) {
-            if (file.folder_id === topFolderID /*|| file.display_name == 'dashboard.jpg'*/) {
+            if (file.folder_id === topFolderID /*|| file.display_name == 'dashboard.jpg'*/ ) {
                 eachCallback(null);
                 return;
             }
