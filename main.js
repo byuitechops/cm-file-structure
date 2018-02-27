@@ -89,25 +89,25 @@ module.exports = (course, stepCallback) => {
 
     /* The folders to be created */
     var mainFolders = [{
-            name: 'documents',
-            id: -1,
-            lessonFolders: true,
-        },
-        {
-            name: 'media',
-            id: -1,
-            lessonFolders: true,
-        },
-        {
-            name: 'template',
-            id: -1,
-            lessonFolders: false,
-        },
-        {
-            name: 'archive',
-            id: -1,
-            lessonFolders: false,
-        },
+        name: 'documents',
+        id: -1,
+        lessonFolders: true,
+    },
+    {
+        name: 'media',
+        id: -1,
+        lessonFolders: true,
+    },
+    {
+        name: 'template',
+        id: -1,
+        lessonFolders: false,
+    },
+    {
+        name: 'archive',
+        id: -1,
+        lessonFolders: false,
+    },
     ];
 
     var topFolderID = -1;
