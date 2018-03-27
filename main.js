@@ -9,110 +9,34 @@ const asyncLib = require('async');
 
 module.exports = (course, stepCallback) => {
 
-    course.message('File structure reorganization has begun. This may take a couple minutes.');
-
-    var courseCode = course.info.fileName.split(' ');
-    courseCode = courseCode[0] + courseCode[1];
-    courseCode = courseCode.toLowerCase().replace(/\s+/g, '');
-    courseCode = courseCode.replace(/:/g, '');
-
-    var documentExtensions = [
-        '.doc',
-        '.docx',
-        '.pdf',
-        '.xls',
-        '.xlsx',
-        '.csv',
-        '.odt',
-        '.ods',
-        '.txt',
-        '.dat',
-        '.log',
-        '.mdb',
-        '.sav',
-        '.sql',
-        '.tar',
-        '.xlr',
-        '.wpd',
-        '.wks',
-        '.wps',
-        '.xlsm',
-        '.rtf',
-        '.xps',
-        '.ppt',
-        '.pptx',
-        '.pps',
-    ];
-
-    var imageFiles = [
-        '.png',
-        '.jpeg',
-        '.gif',
-        '.bmp',
-        '.ai',
-        '.ico',
-        '.jpg',
-        '.ps',
-        '.psd',
-        '.svg',
-        '.tif',
-        '.tiff',
-    ];
-
-    var videoFiles = [
-        '.avi',
-        '.wmv',
-        '.mpg',
-        '.mpeg',
-        '.swf',
-        '.mov',
-        '.mp4',
-    ];
-
-    var audioFiles = [
-        '.aif',
-        '.cda',
-        '.mid',
-        '.midi',
-        '.mp3',
-        '.wav',
-        '.ogg',
-        '.wma',
-        '.wpl',
-    ];
-
-    var templateFiles = [
-        'dashboard.jpg',
-        'homeImage.jpg',
-        'courseBanner.jpg'
-    ];
-
     /* The folders to be created */
-    var mainFolders = [{
-        name: 'documents',
-        id: -1,
-        lessonFolders: true,
-    },
-    {
-        name: 'media',
-        id: -1,
-        lessonFolders: true,
-    },
-    {
-        name: 'template',
-        id: -1,
-        lessonFolders: false,
-    },
-    {
-        name: 'archive',
-        id: -1,
-        lessonFolders: false,
-    },
+    var mainFolders = [
+        {
+            name: 'documents',
+            id: course.info.canvasFolders.documents,
+            lessonFolders: true,
+        },
+        {
+            name: 'media',
+            id: course.info.canvasFolders.media,
+            lessonFolders: true,
+        },
+        {
+            name: 'template',
+            id: course.info.canvasFolders.template,
+            lessonFolders: false,
+        },
+        {
+            name: 'archive',
+            id: course.info.canvasFolders.archive,
+            lessonFolders: false,
+        },
     ];
+
+    course.message('File structure reorganization has begun. This may take a couple minutes.');
 
     var topFolderID = -1;
     var canvasFiles = [];
-
 
     /* Get top folder so we can move everything to it */
     function getTopFolder(callback) {
@@ -178,7 +102,7 @@ module.exports = (course, stepCallback) => {
 
         /* Move a file to the top folder */
         function moveFile(file, eachCallback) {
-            if (file.folder_id === topFolderID /*|| file.display_name == 'dashboard.jpg'*/ ) {
+            if (file.folder_id === topFolderID /*|| file.display_name == 'dashboard.jpg'*/) {
                 eachCallback(null);
                 return;
             }
@@ -210,7 +134,7 @@ module.exports = (course, stepCallback) => {
             }
             canvasFiles = files;
             /* Async move all to top folder */
-            asyncLib.each(files, moveFile, (eachErr) => {
+            asyncLib.eachLimit(files, 20, moveFile, (eachErr) => {
                 if (eachErr) {
                     callback(eachErr);
                     return;
@@ -302,101 +226,6 @@ module.exports = (course, stepCallback) => {
         });
     }
 
-    /* Move the files into their new homes */
-    function moveFiles(callback) {
-
-        /* Move a file to their new folder */
-        function moveFile(file, eachCallback) {
-
-            /* If it is the course image, we don't want to move it */
-            if (file.display_name == 'dashboard.jpg' && file.folder_id != topFolderID) {
-                eachCallback(null);
-                return;
-            }
-
-            function getNewName(type) {
-                var words = file.display_name.toLowerCase().split(' ');
-
-                words.forEach((word, index) => {
-                    if (index != 0) {
-                        words[index] = word.charAt(0).toUpperCase() + word.slice(1);
-                    }
-                });
-                var adjustedName = words.join('');
-                if (words.length == 1) {
-                    adjustedName = file.display_name;
-                }
-                var freshName = `${courseCode}_${type}_${adjustedName}`;
-                course.log('File Names Changed', {
-                    'Name': file.display_name,
-                    'New Name': freshName,
-                    'ID': file.id
-                });
-                return freshName;
-            }
-
-            var newHome;
-            var newName;
-            var splitName = file.display_name.split('.');
-            var extension = '.' + splitName[splitName.length - 1];
-
-
-            /* Figure out which folder to move it to */
-            if (documentExtensions.includes(extension)) {
-                /* Move to Documents */
-                newHome = mainFolders[0].id;
-                newName = getNewName('document');
-            } else if (templateFiles.includes(file.display_name)) {
-                /* Move to Template */
-                newHome = mainFolders[2].id;
-                newName = file.display_name;
-            } else if (imageFiles.includes(extension)) {
-                /* Move to Media */
-                newHome = mainFolders[1].id;
-                newName = getNewName('image');
-            } else if (audioFiles.includes(extension)) {
-                /* Move to Media */
-                newHome = mainFolders[1].id;
-                newName = getNewName('audio');
-            } else if (videoFiles.includes(extension)) {
-                /* Move to Media */
-                newHome = mainFolders[1].id;
-                newName = getNewName('video');
-            } else {
-                /* Move to Archive */
-                newHome = mainFolders[3].id;
-                newName = file.display_name;
-            }
-
-            var putObj = {
-                'name': newName,
-                'parent_folder_id': newHome,
-                'on_duplicate': 'rename'
-            };
-
-            canvas.put(`/api/v1/files/${file.id}`, putObj,
-                (putErr, changedFile) => {
-                    if (putErr) {
-                        course.error(putErr);
-                    }
-                    course.log('Files Moved in Canvas', {
-                        'Name': newName,
-                        'ID': file.id,
-                        'New Parent Folder ID': newHome
-                    });
-                    eachCallback(null);
-                });
-        }
-
-        asyncLib.eachLimit(canvasFiles, 10, moveFile, err => {
-            if (err) {
-                callback(err);
-                return;
-            }
-            callback(null);
-        });
-    }
-
     function lessonFolders(callback) {
         if (!course.settings.lessonFolders) {
             course.message('Lesson folders were not created in documents and media. The option was not requested.');
@@ -409,7 +238,7 @@ module.exports = (course, stepCallback) => {
         function createFolders(parentFolder, eachCallback) {
             asyncLib.times(14, (n, next) => {
                 /* Set the folder name */
-                var folderName = n < 10 ? `Week 0${n + 1}` : `Week ${n + 1}`;
+                var folderName = n < 9 ? `Week 0${n + 1}` : `Week ${n + 1}`;
                 /* Create the folder in canvas */
                 canvas.post(`/api/v1/courses/${course.info.canvasOU}/folders`, {
                     name: folderName,
@@ -451,10 +280,10 @@ module.exports = (course, stepCallback) => {
         moveFilesToTop, // Run a second time to check for leftovers
         deleteFolders, // Deletes the folders at the top level (now that we have all the files out)
         createMainFolders, // Creates the four main folders we'll move everything in to
-        moveFiles, // Moves all the files into their new homes
         lessonFolders // Creates the "Lesson 01" through 14 folders in documents and media, if it was requested
     ];
 
+    // eslint-disable-next-line
     asyncLib.waterfall(functions, (err, result) => {
         if (err) {
             course.error(err);

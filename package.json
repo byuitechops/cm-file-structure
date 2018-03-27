@@ -7,14 +7,14 @@
     "async": "^2.6.0"
   },
   "devDependencies": {
-    "canvas-wrapper": "git+https://github.com/byuitechops/Canvas-wrapper.git",
+    "canvas-wrapper": "github:byuitechops/canvas-wrapper",
     "child-development-kit": "github:byuitechops/child-development-kit",
     "tap": "^10.7.3",
     "write-course": "github:byuitechops/write-course"
   },
   "scripts": {
     "start": "node ./node_modules/child-development-kit/runChild.js",
-    "test": "tap ./node_modules/child-development-kit/testChild.js"
+    "test": "tap ./node_modules/child-development-kit/runChild.js -T"
   },
   "repository": {
     "type": "git",
