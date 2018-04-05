@@ -11,6 +11,7 @@ module.exports = (course, stepCallback) => {
 
     /* The folders to be created */
     var mainFolders = [
+
         {
             name: 'documents',
             id: course.info.canvasFolders.documents,
@@ -30,7 +31,7 @@ module.exports = (course, stepCallback) => {
             name: 'archive',
             id: course.info.canvasFolders.archive,
             lessonFolders: false,
-        },
+        }
     ];
 
     course.message('File structure reorganization has begun. This may take a couple minutes.');
@@ -102,7 +103,7 @@ module.exports = (course, stepCallback) => {
 
         /* Move a file to the top folder */
         function moveFile(file, eachCallback) {
-            if (file.folder_id === topFolderID /*|| file.display_name == 'dashboard.jpg'*/) {
+            if (file.folder_id === topFolderID) {
                 eachCallback(null);
                 return;
             }
@@ -167,7 +168,7 @@ module.exports = (course, stepCallback) => {
                 if (deleteErr) {
                     course.error(deleteErr);
                 } else {
-                    course.log('Folders Deleted in Canvas', {
+                    course.log('Folders Deleted', {
                         'Folder Name': folder.name,
                         'Folder ID': folder.id
                     });
@@ -208,7 +209,7 @@ module.exports = (course, stepCallback) => {
                 } else {
                     /* Set the ID of our folders object to the new folder */
                     folder.id = newFolder.id;
-                    course.log('Folders Created in Canvas', {
+                    course.log('Folders Created', {
                         'Folder Name': newFolder.name,
                         'Folder ID': newFolder.id
                     });
@@ -246,7 +247,7 @@ module.exports = (course, stepCallback) => {
                 }, (err, folder) => {
                     if (err) next(err, null);
                     else {
-                        course.log('Folders Created in Canvas', {
+                        course.log('Folders Created', {
                             name: folder.name,
                             id: folder.id,
                             parentFolder: parentFolder.name,
