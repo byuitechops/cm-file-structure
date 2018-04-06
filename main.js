@@ -8,10 +8,8 @@ const canvas = require('canvas-wrapper');
 const asyncLib = require('async');
 
 module.exports = (course, stepCallback) => {
-
     /* The folders to be created */
     var mainFolders = [
-
         {
             name: 'documents',
             id: course.info.canvasFolders.documents,
@@ -34,10 +32,10 @@ module.exports = (course, stepCallback) => {
         }
     ];
 
-    course.message('File structure reorganization has begun. This may take a couple minutes.');
-
     var topFolderID = -1;
     var canvasFiles = [];
+    
+    course.message('File structure reorganization has begun. This may take a couple minutes.');
 
     /* Get top folder so we can move everything to it */
     function getTopFolder(callback) {
@@ -103,28 +101,30 @@ module.exports = (course, stepCallback) => {
 
         /* Move a file to the top folder */
         function moveFile(file, eachCallback) {
-            if (file.folder_id === topFolderID) {
-                eachCallback(null);
-                return;
-            }
-
-            var putObj = {
-                'parent_folder_id': topFolderID,
-                'on_duplicate': 'rename'
-            };
-
-            canvas.put(`/api/v1/files/${file.id}?on_duplicate=rename`, putObj,
-                (putErr, changedFile) => {
-                    if (putErr) {
-                        course.error(putErr);
-                    } else {
-                        course.log('Files Moved to Top Folder in Canvas', {
-                            'Name': file.display_name,
-                            'ID': file.id
-                        });
-                    }
+            setTimeout(() => {
+                if (file.folder_id === topFolderID) {
                     eachCallback(null);
-                });
+                    return;
+                }
+
+                var putObj = {
+                    'parent_folder_id': topFolderID,
+                    'on_duplicate': 'rename'
+                };
+
+                canvas.put(`/api/v1/files/${file.id}?on_duplicate=rename`, putObj,
+                    (putErr, changedFile) => {
+                        if (putErr) {
+                            course.error(putErr);
+                        } else {
+                            course.log('Files Moved to Top Folder in Canvas', {
+                                'Name': file.display_name,
+                                'ID': file.id
+                            });
+                        }
+                        eachCallback(null);
+                    });
+            }, 0);
         }
 
         /* Get all the files */
@@ -197,7 +197,6 @@ module.exports = (course, stepCallback) => {
     function createMainFolders(callback) {
 
         function createFolder(folder, eachCallback) {
-
             var postObj = {
                 'name': folder.name,
                 'parent_folder_id': topFolderID
