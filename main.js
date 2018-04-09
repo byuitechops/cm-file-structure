@@ -289,6 +289,7 @@ module.exports = (course, stepCallback) => {
             course.error(err);
             stepCallback(null, course);
         } else {
+            course.newInfo('reorganizeFiles', true);
             stepCallback(null, course);
         }
     });
