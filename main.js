@@ -206,6 +206,7 @@ module.exports = (course, stepCallback) => {
                 } else {
                     /* Set the ID of our folders object to the new folder */
                     folder.id = newFolder.id;
+                    course.info.canvasFolders[folder.name] = newFolder.id;
                     course.log('Folders Created', {
                         'Folder Name': newFolder.name,
                         'Folder ID': newFolder.id
