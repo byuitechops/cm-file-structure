@@ -1,7 +1,7 @@
 {
   "name": "reorganize-file-structure",
   "version": "1.0.0",
-  "description": "Template for your children!",
+  "description": "Moves all files and folders to the top level in the canvas course, then removes all of the folders.",
   "main": "main.js",
   "dependencies": {
     "async": "^2.6.0"

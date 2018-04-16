@@ -9,8 +9,7 @@ const asyncLib = require('async');
 
 module.exports = (course, stepCallback) => {
     /* The folders to be created */
-    var mainFolders = [
-        {
+    var mainFolders = [{
             name: 'documents',
             id: course.info.canvasFolders.documents,
             lessonFolders: true,
@@ -33,7 +32,7 @@ module.exports = (course, stepCallback) => {
     ];
 
     var topFolderID = -1;
-    
+
     course.message('File structure reorganization has begun. This may take a couple minutes.');
 
     /* Get top folder so we can move everything to it */
@@ -288,7 +287,7 @@ module.exports = (course, stepCallback) => {
             course.error(err);
             stepCallback(null, course);
         } else {
-            course.newInfo('reorganizeFiles', true);
+            course.settings.reorganizeFiles = true;
             stepCallback(null, course);
         }
     });
