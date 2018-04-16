@@ -33,7 +33,6 @@ module.exports = (course, stepCallback) => {
     ];
 
     var topFolderID = -1;
-    var canvasFiles = [];
     
     course.message('File structure reorganization has begun. This may take a couple minutes.');
 
@@ -113,7 +112,7 @@ module.exports = (course, stepCallback) => {
                 };
 
                 canvas.put(`/api/v1/files/${file.id}?on_duplicate=rename`, putObj,
-                    (putErr, changedFile) => {
+                    (putErr) => {
                         if (putErr) {
                             course.error(putErr);
                         } else {
@@ -133,7 +132,6 @@ module.exports = (course, stepCallback) => {
                 callback(err);
                 return;
             }
-            canvasFiles = files;
             /* Async move all to top folder */
             asyncLib.eachLimit(files, 20, moveFile, (eachErr) => {
                 if (eachErr) {
@@ -164,7 +162,7 @@ module.exports = (course, stepCallback) => {
                 eachCallback(null);
                 return;
             }
-            canvas.delete(`/api/v1/folders/${folder.id}?force=true`, (deleteErr, body) => {
+            canvas.delete(`/api/v1/folders/${folder.id}?force=true`, (deleteErr) => {
                 if (deleteErr) {
                     course.error(deleteErr);
                 } else {
@@ -255,7 +253,7 @@ module.exports = (course, stepCallback) => {
                         next(null, folder);
                     }
                 });
-            }, (timesErr, folders) => {
+            }, (timesErr) => {
                 if (timesErr) {
                     callback(timesErr);
                     return;
