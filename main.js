@@ -225,7 +225,7 @@ module.exports = (course, stepCallback) => {
     }
 
     function lessonFolders(callback) {
-        if (!course.settings.lessonFolders) {
+        if (course.settings.lessonFolders == false) {
             course.message('Lesson folders were not created in documents and media. The option was not requested.');
             callback(null);
             return;
