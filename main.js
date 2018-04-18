@@ -234,7 +234,11 @@ module.exports = (course, stepCallback) => {
         var parentFolders = mainFolders.filter(folder => folder.lessonFolders);
 
         function createFolders(parentFolder, eachCallback) {
-            asyncLib.times(14, (n, next) => {
+            var count = 14;
+            if (course.settings.blockCourse === true) {
+                count = 7;
+            }
+            asyncLib.times(count, (n, next) => {
                 /* Set the folder name */
                 var folderName = n < 9 ? `Week 0${n + 1}` : `Week ${n + 1}`;
                 /* Create the folder in canvas */
