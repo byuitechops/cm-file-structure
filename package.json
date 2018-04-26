@@ -9,8 +9,7 @@
   "devDependencies": {
     "canvas-wrapper": "github:byuitechops/canvas-wrapper",
     "child-development-kit": "github:byuitechops/child-development-kit",
-    "tap": "^10.7.3",
-    "write-course": "github:byuitechops/write-course"
+    "tap": "^10.7.3"
   },
   "scripts": {
     "start": "node ./node_modules/child-development-kit/runChild.js",
