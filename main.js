@@ -15,6 +15,9 @@ module.exports = (course, stepCallback) => {
     var topFolder = {};
     var courseFolders = [];
 
+    /* Let the grandchild that moves the files know it should go ahead */
+    course.settings.reorganizeFiles = true;
+
     function retrieveFolders() {
         return new Promise((resolve, reject) => {
             canvas.get(`/api/v1/courses/${course.info.canvasOU}/folders`, (err, folderList) => {
@@ -139,7 +142,6 @@ module.exports = (course, stepCallback) => {
             }
 
             function createLessonFolders() {
-                course.settings.lessonFolders = true; // TESTING
 
                 if (course.settings.lessonFolders === true) {
                     var folderCount = course.settings.blockCourse === true ? 7 : 14;
